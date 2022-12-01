@@ -1,10 +1,6 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*
 #
-# ----------------------------------------------------------------------------
-#  #  This script is a wrapper of podman commands. 
-#  It will be use by TotalEnergies AI teamsmates 
-# ----------------------------------------------------------------------------
 
 import re
 import os
