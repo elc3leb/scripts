@@ -1,4 +1,8 @@
 #! /usr/bin/python3
+# Eviden GALINA Benjamin - benjamin.galina@eviden.com
+# The purpose of this script is to provide an association between MAC Addresses
+# and the Linux names of network interfaces.
+# It facilitates the construction of the smc Xscale inventory
 
 import requests
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
@@ -8,11 +12,9 @@ import argparse
 import subprocess
 from pprint import pprint
 
-
-
 # Arguments parsing
-parser = argparse.ArgumentParser(description='tbd')
-parser.add_argument('-R', '--url', action="store", help='Redfish Bmc Url, ex : https://<ip>')
+parser = argparse.ArgumentParser(description='BSC MareNostrum 5 ACC Partition DHCP configuration generator')
+parser.add_argument('-R', '--url', action="store", help='Redfish Bmc Url, ex : https://10.106.62.175')
 parser.add_argument('-U', '--username', action="store", help='Username, ex : admin')
 parser.add_argument('-P', '--password', action="store", help='Password, ex: password')
 args = parser.parse_args()
@@ -22,6 +24,8 @@ password = args.password
 
 # HTTP Header
 headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
+# Demande une liste des disques dur pour l'exemple
+path = "/redfish/v1/Chassis/Self/NetworkAdapters/Onboard_0/NetworkPorts/PORT_0"
 # get all installed NIC into the chassis
 network_adapters_path = "/redfish/v1/Chassis/Self/NetworkAdapters"
 try:
@@ -30,18 +34,21 @@ try:
         print('--------------------------------------------------------------------------')
         for nic in response.json()['Members']:
             nic_url = nic['@odata.id']
-            all_nic_info_response = requests.get(url + nic_url, auth=(username, password), headers=headers, verify=False)                                                                                                                 
+            all_nic_info_response = requests.get(url + nic_url, auth=(username, password), headers=headers, verify=False)
             controllers = all_nic_info_response.json()['Controllers']
             pci_model_url = controllers[-1]['Links']['PCIeDevices'][-1]['@odata.id']
-            pci_model_response =  requests.get(url + pci_model_url, auth=(username, password), headers=headers, verify=    False)                                                                                                         
+            pci_model_response =  requests.get(url + pci_model_url, auth=(username, password), headers=headers, verify=    False)
             print('Redfish side : ')
-            print(pci_model_response.json()['Name'])
+            if 'Model' in pci_model_response.json():
+                print(pci_model_response.json()['Model'])
+            else:
+                print(pci_model_response.json()['Name'])
             print(nic_url.split('/')[-1])
             print('\nLinux side :')
             ports = ['PORT_0','PORT_1']
             for mac_port in ports:
                 mac_port_number = "/NetworkPorts/{}".format(mac_port)
-                mac_response = requests.get(url + nic_url + mac_port_number, auth=(username, password), headers=headers, verify=False)                                                                                                    
+                mac_response = requests.get(url + nic_url + mac_port_number, auth=(username, password), headers=headers, verify=False)
                 if 'ActiveLinkTechnology' in mac_response.json():
                     mac = mac_response.json()['AssociatedNetworkAddresses']
                     #print('BMC Redfish MAC Address: {}'.format(mac[-1].lower()))
